@@ -1,2 +1,1 @@
-# hierarchical-forecasting
-Forecasting hospital admissions with modern tidyverse based meta-packages
+Readme and blog posts TBA. 
