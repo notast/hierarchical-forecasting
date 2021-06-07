@@ -13,9 +13,9 @@ Both classical and machine learning approaches were adopted for forecasting. The
 | Level             | RMSE | MAE |
 |-------------------|------|-----|
 | Across all levels | 535  | 412 |
-| National          | 393  | 321 |
-| Cluster           | 657  | 628 |
-| Hospital          | 949  | 789 |
+| National          | 949  | 789 |
+| Cluster           | 657  | 528 |
+| Hospital          | 393 | 321 |
 
 The datasets, model outputs and key objects are housed on this GitHub. The rest of the README outlines the project, more details are found in [my blog](https://notast.netlify.app/tags/modeltime/)
 
