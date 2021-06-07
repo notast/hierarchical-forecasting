@@ -1,13 +1,145 @@
 # 1 Summary
-The aim of the project is to forecast monthly admissions to Singapore public acute adult hospitals. The admissions were treated as a hierarchical time series. Admissions were forecasted at each level. Every country has a hierarchical order to its public hospitals. In Singapore, there are three levels:
+The aim of the project is to forecast monthly admissions to Singapore public acute adult hospitals.  The admissions were treated as a hierarchical time series. Admissions were forecasted at each level. Every country has a hierarchical order to its public hospitals. In Singapore, there are 3 levels:
 
 National level
 <br>
-|-- Cluster level (Clusters are a network of hospitals based on geographical regions. There are 3 health clusters in Singapore.)
+|-- Cluster level (Clusters are a network of hospitals based on geographical regions. There are 3 health clusters in Singapore- NUHS, NHG, SHS.)
  <br>
-|---- Hospital level (There are 8 public acute adult hospitals.)
+|---- Hospital level (There are 8 public acute adult hospitals- NTFGH, NUH, AH, TTSH, KTPH, SGH, SKH, CGH)
 
-Two forecasting approaches were taken; classical and machine learning. While [no approach is superior](https://cbergmeir.com/talks/FFDS_ACML2020.pdf), machine learning approaches reign supreme in this project but with higher computational costs and longer analysis time. 
+Forecasting admissions at hospital levels can help hospital managers plan for better manpower deployment during predicted peak periods. Forecasting at higher levels such as cluster or even national level can help senior management and policy planners develop better strategy to deal with high and lo periods and review other strategies to reduce admission rate. A manageable admission rate helps to ensure clinicians will have sufficient time to review their patients.  
+
+Both classical and machine learning approaches were adopted for forecasting. The best model was ensembled model of retuned Random Forest and retuned Prophet Boost with a 9:1 weighting. This model's accuracy was: 
+| Level             | RMSE | MAE |
+|-------------------|------|-----|
+| Across all levels | 535  | 412 |
+| National          | 393  | 321 |
+| Cluster           | 657  | 628 |
+| Hospital          | 949  | 789 |
+
+The datasets, model outputs and key objects are housed on this GitHub. The rest of the README outlines the project, more details are found in [my blog](https://notast.netlify.app/tags/modeltime/)
+
+# 2 Data
+The [dataset is monthly admission to Singapore public acute adult hospitals](https://www.tablebuilder.singstat.gov.sg/publicfacing/mainMenu.action). The [dataset starts from Jan 2016 and ends in Feb 2021](https://github.com/notast/hierarchical-forecasting/blob/main/stat_sg.csv). The forecast horizon was 10months, i.e. to forecast till the end of 2021. The training set was from Jan 16 to Apr 20 (3 years, 4months) and the testing set was from May 20 to Feb 21 (10 months). 
+
+# 3 EDA
+[Trends, seasonality, anomalies](https://notast.netlify.app/post/2021-06-03-hierarchical-forecasting-of-hospital-admissions/), [lags and correlation of time series features and statistics](https://notast.netlify.app/post/2021-06-05-hierarchical-forecasting-of-hospital-admissions-eda-part-2/) were explored and analysed. 
+
+- In general, there was an increase in the number of admissions till first half of 2020 during the peak of the Covid pandemic. After the peak, admissions to KTPH and NTFGH did not increase to pre peak numbers.
+- The number of admissions to SKH markedly increase during 2018 as the new hospital fully opened its entire hospital campus.
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/1%20Trend%20Hospital.png" width="500"/>
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/1%20Trend%20Cluster.png" width="500"/>
+
+- There are fewer admissions in Feb, likely for two reasons. Firstly, Feb has the shortest month and Chinese Lunar New Year tends to happen during Feb. 
+- There are more admissions in the final quarter of the year, mostly from Oct and Dec. 
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/1%20Season%20Hospital.png" width="550"/>
+
+- Most of the anomaly detected occurred during the peak of COVID19 pandemic from Jan 20- Jul 20. 
+- The anomaly in 2018 came from SKH and was not observed in other hospitals nor at a more aggregated cluster level. The anomaly was likely due to the change in the number of admissions before and after the hospital was opened in Jul 18.
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/1%20Anomaly.png" width="500"/>
+
+- Correlation of the [48 time series features and statistics](https://fabletools.tidyverts.org/reference/features_by_tag.html) was conducted as 48 is a number of variables to analyse. The correlation also determines the associative relationship between the features. Correlation was done for each level as well as a collection of all levels because admissions at superordinate levels would have some correlation with admissions at the subordinate level.
+- The spread in the correlations revealed the heterogeneity of the features, the features identify a variety of time series traits.
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/2%20Correlatio.png" width="550"/>
+
+- PCA was conducted as most features have moderate correlation with each other and to condense the information.
+- The first 5 principal component captured 88% of the variance. 
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/2%20PCA.png" width="450"/>
+
+# 4 Approach (classical) 
+For the classical approach, 3 hierarchical forecasting techniques were used:
+1. bottoms up `bu`
+2. reconciliation using ordinary least square `ols`
+3. reconciliation using minimum trace with sample covariance `mint_cov`
+
+Base models for the above techniques included:
+1. ETS
+2. ARIMA
+3. ARIMA with Covid (peak period) as regressor
+4. ARIMA with Covid regressor with 1 month lag
+5. ARIMA with Covid regressor with 2 month lag
+6. ARIMA with Covid regressor with 3 month lag
+
+The best ARIMA model class was selected using `AICc`.The best ARIMA model was with a dummy variable for Covid peak period as a regressor `ARIMA(Admission ~ Covid)`.
+
+The best ARIMA model and ETS model were then evaluated against the testing set. The best classical model was an ARIMA model with an external regressor for Covid without any lags `ARIMA(Admission ~ Covid)` as the base and the forecast reconciled using minimum trace `mint_cov`. Across all levels, the average `rmse` was 847 and `mae` was 745.
+
+## 4.1 Forecast (classical model on testing set)
+The best model's hierarchical forecast on the testing set is plotted below: 
+
+Hospital level:
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/3%20Classical%20hospital.png" width="550"/>
+
+Cluster level:
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/3%20Classical%20cluster.png" width="550"/>
+
+National level:
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/3%20Classical%20national.png" width="550"/>
+
+# 5 Approach (machine learning) 
+## 5.1 Pre-processing 
+Different combinations of predictors and engineered features were screened to determine the best combination for machine learning.
+
+1. Basic recipe `rec_basic`
+- Lags
+- Rolling lags
+- Covid peak period (dummy variable)
+- Relevant temporal features from `step_timeseries_signature` e.g. month, year, quarter of the year 
+- Hierarchical levels e.g. National level, Cluster level  
+- Members in the corresponding level e.g. CGH hospital, SHS cluster 
+2. Basic recipe + Time series features and statistics `rec_ft`
+3. Basic recipe + PCA of the time series features and statistics `rec_PC`
+4. Basic recipe + kernel PCA of the time series and features and statistics `rec_kPC` 
+
+Random forest model with cross-validation was used to screen the recipes. The best recipe `rec_PC` was used for machine learning modelling.
+| Recipe         | RMSE |
+|----------------|-------------|
+| rec_PC         | 514         |
+| rec_kPC        | 516         |
+| rec_basic      | 526         |
+| rec_rf         | 543         |
+
+## 5.2 Models
+The best recipe was passed into the following models and tuned with resampling:   
+
+1. Elastic net regression with splines `GLM` 
+2. Multivariate adaptive regression spline `MARS` 
+3. Random forest `RF`
+4. Extreme gradient boost `XGB`
+5. Boosted PROPHET `PB` 
+6. ~~LightGBM (Tree-model, Light GBM has seen success with hierarchical time series in the M5 competition but fatal errors were encountered when running it in R)~~
+
+| Model                                   | RMSE | MAE  |
+|-----------------------------------------|------|------|
+| RF                       | 549  | 409  |
+| PB                       | 1137 | 799  |
+| XGB               | 1231 | 888  |
+| MARS | 3796 | 3312 |
+| GLM                             | 9847 | 8281 |
+
+The top 2 models, RF and PB, were manually retuned.
+
+*Example of identifying more appropriate parameter range for retuning Prophet Boost*
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Retuning%20PB.png" width="450"/>
+
+Both Random Forest and Prophet Boost benefited from retuning. 
+| Model                                        | RMSE | MAE |
+|----------------------------------------------|------|-----|
+| RF with retuning  | 545  | 409 |
+| RF                            | 549  | 409 |
+| PB retuning  | 945  | 673 |
+| PB                           | 1137 | 799 |
+
+## 5.3 Ensemble model 
+An ensemble model was assembled from the two top performing models, Random Forest and Prophet Boost. Both tuned and original Random Forests were trial in the ensemble as the performance between the models were minimal. The retuned Prophet Boost was nominated to be the default Prophet Boost for the ensemble as its accuracy was markedly better than the original version. As Random Forest performed much better than Prophet Boost, the weightage given to Random Forest was at least 80%. 
+
+- All the ensemble models performed better than its member models. 
+- Better performing ensemble models had a stronger bias to Random Forest. 
+- Some of the classical approaches performed better than the top 2 machine learning models. 
 
 | Approach         | Model                                                                                   | RMSE | MAE  |
 |------------------|-----------------------------------------------------------------------------------------|------|------|
@@ -15,40 +147,58 @@ Two forecasting approaches were taken; classical and machine learning. While [no
 | Machine Learning | Ensemble model (RF  + PB retuned,   weights 9:1)                                       | 538  | 412  |
 | Machine Learning | Ensemble model (RF retuned + PB retuned, weights 8:2)                                  | 539  | 421  |
 | Machine Learning | Ensemble model (RF + PB retuned, weights 8:2)                                          | 543  | 423  |
-| Machine Learning | Random Forest with retuning (RF retuned)                                              | 545  | 409  |
-| Machine Learning | Random Forest (RF)                                                                      | 549  | 409  |
-| Classical        | Minimum Trace Reconciliation (MINT). Base model: ARIMA + Covid regressor  | 847  | 745  |
-| Machine Learning | Prophet Boost with retuning (PB retuned)                                              | 945  | 673  |
-| Classical        | Ordinary Least Square Reconciliation (OLS). Base model: ARIMA + Covid   regressor       | 1085 | 937  |
+| Machine Learning | RF retuned                                              | 545  | 409  |
+| Machine Learning |  RF                                                                      | 549  | 409  |
+| Classical        | Reconciliation with `mint_cov`. Base model: ARIMA + Covid regressor  | 847  | 745  |
+| Machine Learning | PB retuned                                              | 945  | 673  |
+| Classical        | Reconcilation with `OLS`. Base model: ARIMA + Covid   regressor       | 1085 | 937  |
 | Classical        | Base model of ARIMA + Covid    regressor                                                | 1117 | 991  |
-| Machine Learning | Prophet Boost (PB)                                                                      | 1137 | 799  |
-| Classical        | Bottoms up (BU). Base model: ARIMA + Covid regressor                                    | 1142 | 1043 |
-| Machine Learning | Extreme Gradient Boosting                                                               | 1231 | 888  |
-| Classical        | Base model of ETS                                                                       | 1951 | 1788 |
-| Classical        | OLS. Base model: ETS                                                                    | 2193 | 2028 |
-| Classical        | BU. Base model: ETS                                                                     | 2343 | 2146 |
-| Classical        | MINT. Base model: ETS                                                                   | 3045 | 2814 |
-| Machine Learning | Multivariate Adaptive Regression Spline                                                 | 3796 | 3312 |
-| Machine Learning | Elastic Net                                                                             | 9847 | 8281 |
-| Machine Learning | LightGBM (unable to run in my `R`)                                                      | NA   | NA   |
+| Machine Learning | PB                                                                      | 1137 | 799  |
 
-Forecasting admissions at hospital levels can help hospital managers plan for better manpower deployment during predicted peak periods. Forecasting at higher levels such as cluster of hospitals or even national level can help senior management and policy planners develop better plans to deal with high and low key periods and review other strategies to reduce the admission rate. A manageable admission rate helps to ensure clinicians will have sufficient time to review their patients.  
+## 5.4 Forecast (ML model on testing set)
+The best machine learning model forecast is plotted below: 
 
-The datasets, model outputs and key objects are housed on this GitHub. The rest of the README outlines the project, more details are found in [my blog](https://notast.netlify.app/tags/modeltime/)
-# 2 Data
-The [dataset is monthly admission to Singapore public acute adult hospitals](https://www.tablebuilder.singstat.gov.sg/publicfacing/mainMenu.action). The [dataset starts from Jan 2016 and ends in Feb 2021](https://github.com/notast/hierarchical-forecasting/blob/main/stat_sg.csv). The forecast horizon was 10months, i.e. to forecast till the end of 2021 (Mar 21- Dec 21). The training set was from Jan 16 to Apr 20 (3 years, 4months) and the test set was from May 20 to Feb 21 (10 months). 
+Hospital level: 
 
-# 3 EDA
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Testing%20hospital.png" width="500"/>
+
+Cluster level: 
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Testing%20Cluster.png" width="500"/>
+
+National level: 
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Testing%20national.png" width="500"/>
+
+# 6 Forecast (best model on future period)
+To recap, the training set was from Jan 16 to Apr 20 (3 years, 4months) and the testing set was from May 20 to Feb 21 (10 months) and the forecast horizon was from Mar 21- Dec 21 (10 months). The best model was an ensemble model of retuned Random Forest and retuned Prophet Boost with a 9:1 weightage. Below are the forecasted future admissions using the best model. 
+
+Hospital level: 
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Future%20Hosptial.png" width="600"/>
+
+Cluster level: 
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Future%20Cluster.png" width="550"/>
+
+National level: 
+
+<img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Future%20National.png" width="550"/>
+
+# 7 Future work
+- More machine learning models and deep learning 
+- Predicting all hospital admission at once with a global model.  
+
+# 8 Final thoughts
+- Forecasting admission rates is challenging especially with Covid as the situation can be erratic and dynamic. For instance, the Covid infection rate was stable after Aug 20 but became [more serious in May 21 with the Singapore government implementing stricter social distancing measures](https://www.gov.sg/article/additional-restrictions-under-phase-2--heightened-alert).
 
 
-# 4 Approach (classical) 
 
-# 5 Approach (machine learning) 
 
-## 5.1 Pre-processing 
 
-## 5.2 Models
 
-## 5.3 Ensemble model 
 
-# 6 Future Work
+
+
+
+
