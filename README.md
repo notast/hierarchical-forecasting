@@ -10,12 +10,14 @@ National level
 Forecasting admissions at hospital levels can help hospital managers plan for better manpower deployment during predicted peak periods. Forecasting at higher levels such as cluster or even national level can help senior management and policy planners develop better strategy to deal with high and lo periods and review other strategies to reduce admission rate. A manageable admission rate helps to ensure clinicians will have sufficient time to review their patients.  
 
 Both classical and machine learning approaches were adopted for forecasting. The best model was ensembled model of retuned Random Forest and retuned Prophet Boost with a 9:1 weighting. This model's accuracy was: 
-| Level             | RMSE | MAE |
+| Level             | RMSE (testing set) | MAE (testing set) |
 |-------------------|------|-----|
 | Across all levels | 535  | 412 |
 | National          | 949  | 789 |
 | Cluster           | 657  | 528 |
 | Hospital          | 393 | 321 |
+
+*While smaller rmse are favoured in general, [care needs to be taken when appreciating the rmse for each level as the magnitude of admission differs for each hierarchical level, the superordinate levels have more admissions thus a larger rmse can be expected.](https://otexts.com/fpp3/tourism.html)* 
 
 The datasets, model outputs and key objects are housed on this GitHub. The rest of the README outlines the project, more details are found in [my blog](https://notast.netlify.app/tags/modeltime/)
 
@@ -47,12 +49,12 @@ The [dataset is monthly admission to Singapore public acute adult hospitals](htt
 <img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/2%20PCA.png" width="450"/>
 
 # 4 Approach (classical) 
-For the classical approach, 3 hierarchical forecasting techniques were used:
+For the classical approach, [3 hierarchical forecasting techniques were used](https://notast.netlify.app/post/2021-06-09-hierarchical-forecasting-of-hospital-admissions-classical-forecast/#reconciliation):
 1. bottoms up `bu`
 2. reconciliation using ordinary least square `ols`
 3. reconciliation using minimum trace with sample covariance `mint_cov`
 
-Base models for the above techniques included:
+[Base models for the above techniques included](https://notast.netlify.app/post/2021-06-09-hierarchical-forecasting-of-hospital-admissions-classical-forecast/#models):
 1. ETS
 2. ARIMA
 3. ARIMA with Covid (peak period) as regressor
@@ -60,9 +62,9 @@ Base models for the above techniques included:
 5. ARIMA with Covid regressor with 2 month lag
 6. ARIMA with Covid regressor with 3 month lag
 
-The best ARIMA model class was selected using `AICc`.The best ARIMA model was with a dummy variable for Covid peak period as a regressor `ARIMA(Admission ~ Covid)`.
+[The best ARIMA model class was selected using `AICc`.The best ARIMA model was with a dummy variable for Covid peak period as a regressor `ARIMA(Admission ~ Covid)`](https://notast.netlify.app/post/2021-06-09-hierarchical-forecasting-of-hospital-admissions-classical-forecast/#arima).
 
-The best ARIMA model and ETS model were then evaluated against the testing set. The best classical model was an ARIMA model with an external regressor for Covid without any lags `ARIMA(Admission ~ Covid)` as the base and the forecast reconciled using minimum trace `mint_cov`. Across all levels, the average `rmse` was 847 and `mae` was 745.
+[The best ARIMA model and ETS model were then evaluated against the testing set. The best classical model was an ARIMA model with an external regressor for Covid without any lags `ARIMA(Admission ~ Covid)` as the base and the forecast reconciled using minimum trace `mint_cov`. Across all levels, the average `rmse` was 847 and `mae` was 745](https://notast.netlify.app/post/2021-06-09-hierarchical-forecasting-of-hospital-admissions-classical-forecast/#arima-vs-ets).
 
 ## 4.1 Forecast (classical model on testing set)
 The best model's hierarchical forecast on the testing set is plotted below: 
@@ -95,7 +97,7 @@ Different combinations of predictors and engineered features were screened to de
 4. Basic recipe + kernel PCA of the time series and features and statistics `rec_kPC` 
 
 Random forest model with cross-validation was used to screen the recipes. The best recipe `rec_PC` was used for machine learning modelling.
-| Recipe         | RMSE |
+| Recipe         | RMSE (avg cv) |
 |----------------|-------------|
 | rec_PC         | 514         |
 | rec_kPC        | 516         |
@@ -110,9 +112,9 @@ The best recipe was passed into the following models and tuned with resampling:
 3. Random forest `RF`
 4. Extreme gradient boost `XGB`
 5. Boosted PROPHET `PB` 
-6. ~~LightGBM (Tree-model, Light GBM has seen success with hierarchical time series in the M5 competition but fatal errors were encountered when running it in R)~~
+6. ~~LightGBM (LightGBM has seen success with hierarchical time series in the M5 competition but fatal errors were encountered when running it in `R`)~~
 
-| Model                                   | RMSE | MAE  |
+| Model                                   | RMSE (avg cv) | MAE (avg cv)  |
 |-----------------------------------------|------|------|
 | RF                       | 549  | 409  |
 | PB                       | 1137 | 799  |
@@ -127,7 +129,7 @@ The top 2 models, RF and PB, were manually retuned.
 <img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Retuning%20PB.png" width="450"/>
 
 Both Random Forest and Prophet Boost benefited from retuning. 
-| Model                                        | RMSE | MAE |
+| Model                                        | RMSE (avg cv) | MAE (avg cv) |
 |----------------------------------------------|------|-----|
 | RF with retuning  | 545  | 409 |
 | RF                            | 549  | 409 |
@@ -141,7 +143,7 @@ An ensemble model was assembled from the two top performing models, Random Fores
 - Better performing ensemble models had a stronger bias to Random Forest. 
 - Some of the classical approaches performed better than the top 2 machine learning models. 
 
-| Approach         | Model                                                                                   | RMSE | MAE  |
+| Approach         | Model                                                                                   | RMSE (training set) | MAE (training set) |
 |------------------|-----------------------------------------------------------------------------------------|------|------|
 | Machine Learning | Ensemble model (RF retuned + PB retuned, weights 9:1)                                  | 535  | 412  |
 | Machine Learning | Ensemble model (RF  + PB retuned,   weights 9:1)                                       | 538  | 412  |
@@ -156,7 +158,7 @@ An ensemble model was assembled from the two top performing models, Random Fores
 | Machine Learning | PB                                                                      | 1137 | 799  |
 
 ## 5.4 Forecast (ML model on testing set)
-The best machine learning model forecast is plotted below: 
+The best machine learning model forecast is plotted below:
 
 Hospital level: 
 
@@ -185,12 +187,12 @@ National level:
 
 <img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Future%20National.png" width="550"/>
 
-# 7 Future work
+# 7 Reflecting points
+Forecasting admission rates is challenging. A handful of the forecasts at hospital levels are relatively flat lines. Moreover, Covid can throw any forecast off the rails as the situation can be erratic and dynamic. For instance, the Covid infection rate was stable after Aug 20 but became [more serious in May 21 with the Singapore government implementing stricter social distancing measures](https://www.gov.sg/article/additional-restrictions-under-phase-2--heightened-alert).
+
+# 8 Future work
 - More machine learning models and deep learning 
 - Predicting all hospital admission at once with a global model.  
-
-# 8 Final thoughts
-- Forecasting admission rates is challenging especially with Covid as the situation can be erratic and dynamic. For instance, the Covid infection rate was stable after Aug 20 but became [more serious in May 21 with the Singapore government implementing stricter social distancing measures](https://www.gov.sg/article/additional-restrictions-under-phase-2--heightened-alert).
 
 
 
