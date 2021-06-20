@@ -45,7 +45,7 @@ The [dataset is monthly admission to Singapore public acute adult hospitals](htt
 <img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/2%20Correlatio.png" width="550"/>
 
 - PCA was conducted as most features have moderate correlation with each other and to condense the information.
-- The first 5 principal component captured 88% of the variance. 
+- [The first 5 principal component captured 88% of the variance.](https://notast.netlify.app/post/2021-06-05-hierarchical-forecasting-of-hospital-admissions-eda-part-2/#variation-captured) 
 <img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/2%20PCA.png" width="450"/>
 
 # 4 Approach (classical) 
@@ -67,7 +67,7 @@ For the classical approach, [3 hierarchical forecasting techniques were used](ht
 [The best ARIMA model and ETS model were then evaluated against the testing set. The best classical model was an ARIMA model with an external regressor for Covid without any lags `ARIMA(Admission ~ Covid)` as the base and the forecast reconciled using minimum trace `mint_cov`. Across all levels, the average `rmse` was 847 and `mae` was 745](https://notast.netlify.app/post/2021-06-09-hierarchical-forecasting-of-hospital-admissions-classical-forecast/#arima-vs-ets).
 
 ## 4.1 Forecast (classical model on testing set)
-The best model's hierarchical forecast on the testing set is plotted below: 
+[The best model's hierarchical forecast on the testing set is plotted below](https://notast.netlify.app/post/2021-06-09-hierarchical-forecasting-of-hospital-admissions-classical-forecast/#performance-for-each-level): 
 
 Hospital level:
 
@@ -83,7 +83,7 @@ National level:
 
 # 5 Approach (machine learning) 
 ## 5.1 Pre-processing 
-Different combinations of predictors and engineered features were screened to determine the best combination for machine learning.
+[Different combinations of predictors and engineered features were screened to determine the best combination for machine learning](https://notast.netlify.app/post/2021-06-12-hierarchical-forecasting-of-hospital-admissions-ml-approach-screen-variables/#pre-processing-recipes).
 
 1. Basic recipe `rec_basic`
 - Lags
@@ -96,7 +96,7 @@ Different combinations of predictors and engineered features were screened to de
 3. Basic recipe + PCA of the time series features and statistics `rec_PC`
 4. Basic recipe + kernel PCA of the time series and features and statistics `rec_kPC` 
 
-Random forest model with cross-validation was used to screen the recipes. The best recipe `rec_PC` was used for machine learning modelling.
+[Random forest model](https://notast.netlify.app/post/2021-06-12-hierarchical-forecasting-of-hospital-admissions-ml-approach-screen-variables/#modelling) [with cross-validation](https://notast.netlify.app/post/2021-06-12-hierarchical-forecasting-of-hospital-admissions-ml-approach-screen-variables/#evaluate-with-cross-validation) was used to screen the recipes. The best recipe `rec_PC` was used for machine learning modelling.
 | Recipe         | RMSE (avg cv) |
 |----------------|-------------|
 | rec_PC         | 514         |
@@ -105,7 +105,7 @@ Random forest model with cross-validation was used to screen the recipes. The be
 | rec_rf         | 543         |
 
 ## 5.2 Models
-The best recipe was passed into the following models and tuned with resampling:   
+The best recipe was [passed into the following models and tuned with resampling](https://notast.netlify.app/post/2021-06-14-hierarchical-forecasting-of-hospital-admissions-ml-approach-modeltime-package/#modelling):   
 
 1. Elastic net regression with splines `GLM` 
 2. Multivariate adaptive regression spline `MARS` 
@@ -122,13 +122,13 @@ The best recipe was passed into the following models and tuned with resampling:
 | MARS | 3796 | 3312 |
 | GLM                             | 9847 | 8281 |
 
-The top 2 models, RF and PB, were manually retuned.
+The top 2 models, RF and PB, were [manually retuned](https://notast.netlify.app/post/2021-06-20-hierarchical-forecasting-of-hospital-admissions-ml-approach-ensemble/#tune-again).
 
 *Example of identifying more appropriate parameter range for retuning Prophet Boost*
 
 <img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Retuning%20PB.png" width="450"/>
 
-Both Random Forest and Prophet Boost benefited from retuning. 
+Both Random Forest and Prophet Boost [benefited from retuning.](https://notast.netlify.app/post/2021-06-20-hierarchical-forecasting-of-hospital-admissions-ml-approach-ensemble/#performance-after-retuning) 
 | Model                                        | RMSE (avg cv) | MAE (avg cv) |
 |----------------------------------------------|------|-----|
 | RF with retuning  | 545  | 409 |
@@ -137,7 +137,7 @@ Both Random Forest and Prophet Boost benefited from retuning.
 | PB                           | 1137 | 799 |
 
 ## 5.3 Ensemble model 
-An ensemble model was assembled from the two top performing models, Random Forest and Prophet Boost. Both tuned and original Random Forests were trial in the ensemble as the performance between the models were minimal. The retuned Prophet Boost was nominated to be the default Prophet Boost for the ensemble as its accuracy was markedly better than the original version. As Random Forest performed much better than Prophet Boost, the weightage given to Random Forest was at least 80%. 
+[An ensemble model was assembled from the two top performing models, Random Forest and Prophet Boost. Both tuned and original Random Forests were trial in the ensemble as the performance between the models were minimal. The retuned Prophet Boost was nominated to be the default Prophet Boost for the ensemble as its accuracy was markedly better than the original version. As Random Forest performed much better than Prophet Boost, the weightage given to Random Forest was at least 80%.](https://notast.netlify.app/post/2021-06-20-hierarchical-forecasting-of-hospital-admissions-ml-approach-ensemble/#ensemble) 
 
 - All the ensemble models performed better than its member models. 
 - Better performing ensemble models had a stronger bias to Random Forest. 
@@ -158,7 +158,7 @@ An ensemble model was assembled from the two top performing models, Random Fores
 | Machine Learning | PB                                                                      | 1137 | 799  |
 
 ## 5.4 Forecast (ML model on testing set)
-The best machine learning model forecast is plotted below:
+The [best machine learning model forecast on the testing is plotted below](https://notast.netlify.app/post/2021-06-20-hierarchical-forecasting-of-hospital-admissions-ml-approach-ensemble/#performance-individual-levels):
 
 Hospital level: 
 
@@ -173,7 +173,7 @@ National level:
 <img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Testing%20national.png" width="500"/>
 
 # 6 Forecast (best model on future period)
-To recap, the training set was from Jan 16 to Apr 20 (3 years, 4months) and the testing set was from May 20 to Feb 21 (10 months) and the forecast horizon was from Mar 21- Dec 21 (10 months). The best model was an ensemble model of retuned Random Forest and retuned Prophet Boost with a 9:1 weightage. Below are the forecasted future admissions using the best model. 
+To recap, the training set was from Jan 16 to Apr 20 (3 years, 4months) and the testing set was from May 20 to Feb 21 (10 months) and the forecast horizon was from Mar 21- Dec 21 (10 months). The best model was an ensemble model of retuned Random Forest and retuned Prophet Boost with a 9:1 weightage. [Below are the forecasted future admissions using the best model](https://notast.netlify.app/post/2021-06-20-hierarchical-forecasting-of-hospital-admissions-ml-approach-ensemble/#the-future). 
 
 Hospital level: 
 
@@ -188,10 +188,11 @@ National level:
 <img src="https://github.com/notast/hierarchical-forecasting/blob/main/images/6%20Future%20National.png" width="550"/>
 
 # 7 Reflecting points
-Forecasting admission rates is challenging. A handful of the forecasts at hospital levels are relatively flat lines. Moreover, Covid can throw any forecast off the rails as the situation can be erratic and dynamic. For instance, the Covid infection rate was stable after Aug 20 but became [more serious in May 21 with the Singapore government implementing stricter social distancing measures](https://www.gov.sg/article/additional-restrictions-under-phase-2--heightened-alert).
+Most of the hospital level forecast were relatively flat; perhaps, due to insufficient data compared to cluster and national level which had more observations from the aggregation of subordinate levels. The forecast for cluster and national level appeared more plausible with some peaks and dips with an upward trend. Nonetheless, forecasting during this Covid period is challenging. Any forecast can be thrown off the rails as the situation is erratic and dynamic. For instance, the Covid infection rate was stable after Aug 20 but became [more serious in May 21 with the Singapore government implementing stricter social distancing measures](https://www.gov.sg/article/additional-restrictions-under-phase-2--heightened-alert).
 
 # 8 Future work
-- More machine learning models and deep learning 
+- More machine learning models and deep learning
+- Replacing XGB in Prophet Boost with other tree-based boost models like Catboost or lightGBM
 - Predicting all hospital admission at once with a global model.  
 
 
